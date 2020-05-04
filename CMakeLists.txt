@@ -39,12 +39,12 @@ list (APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 option (NLOPT_CXX "enable cxx routines" ON)
 option (NLOPT_FORTRAN "enable fortran tests" OFF)
-option (BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
-option (NLOPT_PYTHON "build python bindings" ON)
-option (NLOPT_OCTAVE "build octave bindings" ON)
-option (NLOPT_MATLAB "build matlab bindings" ON)
-option (NLOPT_GUILE "build guile bindings" ON)
-option (NLOPT_SWIG "use SWIG to build bindings" ON)
+option (BUILD_SHARED_LIBS "Build NLopt as a shared library" OFF)
+option (NLOPT_PYTHON "build python bindings" OFF)
+option (NLOPT_OCTAVE "build octave bindings" OFF)
+option (NLOPT_MATLAB "build matlab bindings" OFF)
+option (NLOPT_GUILE "build guile bindings" OFF)
+option (NLOPT_SWIG "use SWIG to build bindings" OFF)
 
 if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
   option (NLOPT_TESTS "build unit tests" ON)
@@ -239,11 +239,20 @@ endif ()
 
 install (FILES ${NLOPT_HEADERS} DESTINATION ${RELATIVE_INSTALL_INCLUDE_DIR})
 
-set (nlopt_lib nlopt)
+#modification by geoff: not allowed to have two different nlopt.vcxproj files, 
+#so we append the platform as a suffix
+if("${CMAKE_GENERATOR}" MATCHES ".*Win64")
+  set(platform "-x64")
+elseif("${CMAKE_GENERATOR}" MATCHES ".*\\d+")
+  set(platform "-x86")
+endif()
+
+set (nlopt_lib "GENERATED-nlopt${platform}")
 add_library (${nlopt_lib} ${NLOPT_SOURCES})
 add_dependencies(${nlopt_lib} generate-cpp)
 target_link_libraries (${nlopt_lib} ${M_LIBRARY})
 
+set_target_properties (${nlopt_lib} PROPERTIES OUTPUT_NAME "nlopt${platform}")
 set_target_properties (${nlopt_lib} PROPERTIES SOVERSION ${SO_MAJOR})
 set_target_properties (${nlopt_lib} PROPERTIES VERSION "${SO_MAJOR}.${SO_MINOR}.${SO_PATCH}")
 
