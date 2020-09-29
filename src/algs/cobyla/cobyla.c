@@ -1268,6 +1268,7 @@ static nlopt_result trstlp(int *n, int *m, double *a,
   int kl, kp, kw;
   int nact, icon = 0, mcon;
   int nactx = 0;
+  int exitCount = 0;
 
 
 /* This subroutine calculates an N-component vector DX by applying the */
@@ -1856,6 +1857,10 @@ L480:
   icon = mcon;
   iact[mcon] = mcon;
   vmultc[mcon] = 0.;
+  exitCount += 1;
+  if(exitCount >= 10000){
+	  goto L500;
+  }
   goto L60;
 
 /* We employ any freedom that may be available to reduce the objective */
