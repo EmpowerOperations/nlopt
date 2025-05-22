@@ -39,7 +39,7 @@ option (NLOPT_INSTALL "do nlopt install locally" OFF)
 
 option (NLOPT_CXX "enable cxx routines" ON)
 option (NLOPT_FORTRAN "enable fortran" OFF)
-option (BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
+option (BUILD_SHARED_LIBS "Build NLopt as a shared library" OFF)
 option (NLOPT_PYTHON "build python bindings" ON)
 option (NLOPT_OCTAVE "build octave bindings" ON)
 option (NLOPT_MATLAB "build matlab bindings" OFF)
