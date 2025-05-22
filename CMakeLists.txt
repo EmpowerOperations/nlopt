@@ -35,6 +35,8 @@ set(SO_PATCH 0)
 
 list (APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+option (NLOPT_INSTALL "do nlopt install locally" OFF)
+
 option (NLOPT_CXX "enable cxx routines" ON)
 option (NLOPT_FORTRAN "enable fortran" OFF)
 option (BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
@@ -164,8 +166,10 @@ endif ()
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/nlopt_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/nlopt_config.h IMMEDIATE)
 
 # pkgconfig file
-configure_file (${CMAKE_CURRENT_SOURCE_DIR}/nlopt.pc.in ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc @ONLY)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc DESTINATION ${NLOPT_INSTALL_LIBDIR}/pkgconfig)
+if (NLOPT_INSTALL AND (UNIX OR MINGW))
+  configure_file (${CMAKE_CURRENT_SOURCE_DIR}/nlopt.pc.in ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc @ONLY)
+  install (FILES ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc DESTINATION ${RELATIVE_INSTALL_LIB_DIR}/pkgconfig)
+endif ()
 
 #==============================================================================
 # nlopt LIBRARY TARGET (SHARED OR STATIC)
@@ -249,7 +253,9 @@ set_property(SOURCE src/algs/ags/solver.cc src/algs/ags/local_optimizer.cc src/a
              PROPERTY SKIP_UNITY_BUILD_INCLUSION ON)
 endif ()
 
-install (FILES ${NLOPT_HEADERS} DESTINATION ${NLOPT_INSTALL_INCLUDEDIR})
+if(NLOPT_INSTALL)
+  install (FILES ${NLOPT_HEADERS} DESTINATION ${RELATIVE_INSTALL_INCLUDE_DIR})
+endif()
 
 set (nlopt_lib nlopt)
 add_library (${nlopt_lib} ${NLOPT_SOURCES})
@@ -307,16 +313,18 @@ if (DISABLE_FP_CONTRACT AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffp-contract=off")
 endif ()
 
-install ( TARGETS ${nlopt_lib}
-          EXPORT  NLoptLibraryDepends
-          RUNTIME DESTINATION ${NLOPT_INSTALL_BINDIR}
-          LIBRARY DESTINATION ${NLOPT_INSTALL_LIBDIR}
-          ARCHIVE DESTINATION ${NLOPT_INSTALL_LIBDIR}
-        )
-
-if (MSVC AND BUILD_SHARED_LIBS)
-  install (FILES $<TARGET_PDB_FILE:${nlopt_lib}> DESTINATION ${NLOPT_INSTALL_BINDIR} CONFIGURATIONS Debug RelWithDebInfo COMPONENT Debug)
-endif ()
+if(NLOPT_INSTALL)
+	install ( TARGETS ${nlopt_lib}
+			  EXPORT  NLoptLibraryDepends
+			  RUNTIME DESTINATION ${NLOPT_INSTALL_BINDIR}
+			  LIBRARY DESTINATION ${NLOPT_INSTALL_LIBDIR}
+			  ARCHIVE DESTINATION ${NLOPT_INSTALL_LIBDIR}
+			)
+			
+  if (MSVC AND BUILD_SHARED_LIBS)
+    install (FILES $<TARGET_PDB_FILE:${nlopt_lib}> DESTINATION ${NLOPT_INSTALL_BINDIR} CONFIGURATIONS Debug RelWithDebInfo COMPONENT Debug)
+  endif ()
+endif()
 
 # install man
 if (UNIX)
@@ -408,20 +416,22 @@ include (CPack)
 # configuration files
 export (TARGETS ${nlopt_lib} NAMESPACE NLopt:: FILE ${PROJECT_BINARY_DIR}/NLoptLibraryDepends.cmake)
 
-# Install the export set for use with the install-tree
-install(EXPORT NLoptLibraryDepends
-        NAMESPACE NLopt::
-        DESTINATION ${NLOPT_INSTALL_CMAKEDIR}
-        COMPONENT Development)
-
-# Create a NLOPTConfig.cmake file for the use from the install tree
-# and install it
-set (NLOPT_LIBRARIES "NLopt::${nlopt_lib}")
-
-configure_file (cmake/NLoptConfig.cmake.in NLoptConfig.cmake @ONLY)
-configure_file (cmake/NLoptConfigVersion.cmake.in NLoptConfigVersion.cmake @ONLY)
-install (FILES
-          ${CMAKE_CURRENT_BINARY_DIR}/NLoptConfig.cmake
-          ${CMAKE_CURRENT_BINARY_DIR}/NLoptConfigVersion.cmake
-         DESTINATION ${NLOPT_INSTALL_CMAKEDIR}
-         COMPONENT Development)
+if(NLOPT_INSTALL)
+  # Install the export set for use with the install-tree
+  install(EXPORT NLoptLibraryDepends
+      NAMESPACE NLopt::
+      DESTINATION ${NLOPT_INSTALL_CMAKEDIR}
+      COMPONENT Development)
+	  
+  # Create a NLOPTConfig.cmake file for the use from the install tree
+  # and install it
+  set (NLOPT_LIBRARIES "NLopt::${nlopt_lib}")
+  
+  configure_file (cmake/NLoptConfig.cmake.in NLoptConfig.cmake @ONLY)
+  configure_file (cmake/NLoptConfigVersion.cmake.in NLoptConfigVersion.cmake @ONLY)
+  install (FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/NLoptConfig.cmake
+            ${CMAKE_CURRENT_BINARY_DIR}/NLoptConfigVersion.cmake
+           DESTINATION ${NLOPT_INSTALL_CMAKEDIR}
+           COMPONENT Development)
+endif()
