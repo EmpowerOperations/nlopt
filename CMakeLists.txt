@@ -37,6 +37,8 @@ set(SO_PATCH 1)
 
 list (APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+option (NLOPT_INSTALL "do nlopt install locally" OFF)
+
 option (NLOPT_CXX "enable cxx routines" ON)
 option (NLOPT_FORTRAN "enable fortran tests" OFF)
 option (BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
@@ -177,7 +179,7 @@ endif ()
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/nlopt_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/nlopt_config.h IMMEDIATE)
 
 # pkgconfig file
-if (UNIX OR MINGW)
+if (NLOPT_INSTALL AND (UNIX OR MINGW))
   configure_file (${CMAKE_CURRENT_SOURCE_DIR}/nlopt.pc.in ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc @ONLY)
   install (FILES ${CMAKE_CURRENT_BINARY_DIR}/nlopt.pc DESTINATION ${RELATIVE_INSTALL_LIB_DIR}/pkgconfig)
 endif ()
@@ -229,7 +231,9 @@ if (NLOPT_CXX11)
   src/algs/ags/local_optimizer.hpp src/algs/ags/local_optimizer.cc src/algs/ags/ags.h src/algs/ags/ags.cc)
 endif ()
 
-install (FILES ${NLOPT_HEADERS} DESTINATION ${RELATIVE_INSTALL_INCLUDE_DIR})
+if(NLOPT_INSTALL)
+  install (FILES ${NLOPT_HEADERS} DESTINATION ${RELATIVE_INSTALL_INCLUDE_DIR})
+endif()
 
 set (nlopt_lib nlopt)
 add_library (${nlopt_lib} ${NLOPT_SOURCES})
@@ -282,16 +286,18 @@ if (NOT BUILD_SHARED_LIBS)
   endif ()
 endif ()
 
-install ( TARGETS ${nlopt_lib}
-          EXPORT  NLoptLibraryDepends
-          RUNTIME DESTINATION ${RELATIVE_INSTALL_BIN_DIR}
-          LIBRARY DESTINATION ${RELATIVE_INSTALL_LIB_DIR}
-          ARCHIVE DESTINATION ${RELATIVE_INSTALL_LIB_DIR}
-        )
-
-if (MSVC AND BUILD_SHARED_LIBS)
-  install (FILES $<TARGET_PDB_FILE:${nlopt_lib}> DESTINATION ${RELATIVE_INSTALL_BIN_DIR} CONFIGURATIONS Debug RelWithDebInfo COMPONENT Debug)
-endif ()
+if(NLOPT_INSTALL)
+	install ( TARGETS ${nlopt_lib}
+			  EXPORT  NLoptLibraryDepends
+			  RUNTIME DESTINATION ${RELATIVE_INSTALL_BIN_DIR}
+			  LIBRARY DESTINATION ${RELATIVE_INSTALL_LIB_DIR}
+			  ARCHIVE DESTINATION ${RELATIVE_INSTALL_LIB_DIR}
+			)
+			
+  if (MSVC AND BUILD_SHARED_LIBS)
+    install (FILES $<TARGET_PDB_FILE:${nlopt_lib}> DESTINATION ${RELATIVE_INSTALL_BIN_DIR} CONFIGURATIONS Debug RelWithDebInfo COMPONENT Debug)
+  endif ()
+endif()
 
 add_subdirectory (src/api)
 
@@ -355,27 +361,29 @@ include (CPack)
 # configuration files
 export (TARGETS ${nlopt_lib} NAMESPACE NLopt:: FILE ${PROJECT_BINARY_DIR}/NLoptLibraryDepends.cmake)
 
-# Install the export set for use with the install-tree
-install(EXPORT NLoptLibraryDepends
-        NAMESPACE NLopt::
-        DESTINATION ${RELATIVE_INSTALL_CMAKE_DIR}
-        COMPONENT Development)
-
-# Create a NLOPTConfig.cmake file for the use from the install tree
-# and install it
-set (NLOPT_LIBRARIES "NLopt::${nlopt_lib}")
-
-set (NLOPT_CMAKE_DIR "${INSTALL_CMAKE_DIR}")
-file (RELATIVE_PATH rel_include_dir "${NLOPT_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
-list (APPEND RELATIVE_NLOPT_INCLUDE_DIRS ${rel_include_dir})
-
-file (RELATIVE_PATH rel_lib_dir "${NLOPT_CMAKE_DIR}" "${INSTALL_LIB_DIR}")
-list (APPEND RELATIVE_NLOPT_LIB_DIR ${rel_lib_dir})
-
-configure_file (cmake/NLoptConfig.cmake.in NLoptConfig.cmake @ONLY)
-configure_file (cmake/NLoptConfigVersion.cmake.in NLoptConfigVersion.cmake @ONLY)
-install (FILES
-          ${CMAKE_CURRENT_BINARY_DIR}/NLoptConfig.cmake
-          ${CMAKE_CURRENT_BINARY_DIR}/NLoptConfigVersion.cmake
-         DESTINATION ${RELATIVE_INSTALL_CMAKE_DIR}
-         COMPONENT Development)
+if(NLOPT_INSTALL)
+  # Install the export set for use with the install-tree
+  install(EXPORT NLoptLibraryDepends
+      NAMESPACE NLopt::
+      DESTINATION ${RELATIVE_INSTALL_CMAKE_DIR}
+      COMPONENT Development)
+	  
+  # Create a NLOPTConfig.cmake file for the use from the install tree
+  # and install it
+  set (NLOPT_LIBRARIES "NLopt::${nlopt_lib}")
+  
+  set (NLOPT_CMAKE_DIR "${INSTALL_CMAKE_DIR}")
+  file (RELATIVE_PATH rel_include_dir "${NLOPT_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
+  list (APPEND RELATIVE_NLOPT_INCLUDE_DIRS ${rel_include_dir})
+  
+  file (RELATIVE_PATH rel_lib_dir "${NLOPT_CMAKE_DIR}" "${INSTALL_LIB_DIR}")
+  list (APPEND RELATIVE_NLOPT_LIB_DIR ${rel_lib_dir})
+  
+  configure_file (cmake/NLoptConfig.cmake.in NLoptConfig.cmake @ONLY)
+  configure_file (cmake/NLoptConfigVersion.cmake.in NLoptConfigVersion.cmake @ONLY)
+  install (FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/NLoptConfig.cmake
+            ${CMAKE_CURRENT_BINARY_DIR}/NLoptConfigVersion.cmake
+           DESTINATION ${RELATIVE_INSTALL_CMAKE_DIR}
+           COMPONENT Development)
+endif()
